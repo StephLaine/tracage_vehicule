@@ -1,0 +1,17 @@
+export const mockPlates = [
+  { id: 'p1', plate: 'HT-2245-XY', reason: 'Volée', riskLevel: 'red', addedDate: '2026-03-12', addedBy: 'Agent Dubois', note: 'Signalement commissariat Delmas' },
+  { id: 'p2', plate: 'AA-1234-BB', reason: 'Frauduleuse', riskLevel: 'red', addedDate: '2026-04-02', addedBy: 'Agent Laurent', note: 'Plaque clonée détectée' },
+  { id: 'p3', plate: 'HT-3301-NQ', reason: 'Suspecte', riskLevel: 'orange', addedDate: '2026-04-18', addedBy: 'Agent Michel', note: 'Plusieurs passages nocturnes' },
+  { id: 'p4', plate: 'BB-9021-LT', reason: 'Volée', riskLevel: 'red', addedDate: '2026-02-28', addedBy: 'Agent Dubois', note: '' },
+  { id: 'p5', plate: 'HT-5512-DF', reason: 'Suspecte', riskLevel: 'orange', addedDate: '2026-05-01', addedBy: 'Agent Pierre', note: 'Véhicule non assuré' },
+  { id: 'p6', plate: 'AA-4400-HK', reason: 'Autre', riskLevel: 'orange', addedDate: '2026-05-08', addedBy: 'Agent Laurent', note: 'Contrôle douanier' },
+  { id: 'p7', plate: 'HT-8819-MZ', reason: 'Frauduleuse', riskLevel: 'red', addedDate: '2026-01-15', addedBy: 'Agent Michel', note: '' },
+  { id: 'p8', plate: 'HT-1024-JP', reason: 'Suspecte', riskLevel: 'orange', addedDate: '2026-04-25', addedBy: 'Agent Dubois', note: 'Association connue' },
+  { id: 'p9', plate: 'AA-6655-WE', reason: 'Volée', riskLevel: 'red', addedDate: '2026-03-30', addedBy: 'Agent Pierre', note: 'Vol confirmé Carrefour' },
+  { id: 'p10', plate: 'HT-7743-AS', reason: 'Autre', riskLevel: 'orange', addedDate: '2026-05-10', addedBy: 'Agent Laurent', note: 'Mandat en cours' },
+  { id: 'p11', plate: 'BB-2109-VC', reason: 'Frauduleuse', riskLevel: 'red', addedDate: '2026-02-14', addedBy: 'Agent Michel', note: '' },
+  { id: 'p12', plate: 'HT-9981-RT', reason: 'Suspecte', riskLevel: 'orange', addedDate: '2026-05-12', addedBy: 'Agent Dubois', note: 'Surveillance active' },
+  { id: 'p13', plate: 'HT-1190-RX', reason: 'Volée', riskLevel: 'red', addedDate: '2026-04-05', addedBy: 'Agent Pierre', note: 'Champ-de-Mars' },
+  { id: 'p14', plate: 'AA-7734-PL', reason: 'Autre', riskLevel: 'orange', addedDate: '2026-05-14', addedBy: 'Agent Laurent', note: '' },
+  { id: 'p15', plate: 'HT-4821-KM', reason: 'Suspecte', riskLevel: 'orange', addedDate: '2026-05-15', addedBy: 'Agent Michel', note: 'Croix-des-Bouquets' },
+]
