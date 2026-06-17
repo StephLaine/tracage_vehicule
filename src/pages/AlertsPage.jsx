@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { mockAlerts } from '@/data/mockAlerts'
 import { LevelBadge } from '@/components/LevelBadge'
 import { Modal } from '@/components/Modal'
 import { CopyableRow } from '@/components/CopyableRow'
 import { formatDateTime } from '@/lib/utils'
+import { useLiveFeed } from '@/hooks/useLiveFeed'
+
 const PAGE_SIZE = 10
 
 const statusLabels = {
@@ -18,15 +19,48 @@ export function AlertsPage() {
   const [status, setStatus] = useState('all')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState(null)
+  
+  const { allDetections } = useLiveFeed()
+  const [alertStatuses, setAlertStatuses] = useState(() => {
+    const saved = localStorage.getItem('alert_statuses')
+    return saved ? JSON.parse(saved) : {}
+  })
+
+  const updateAlertStatus = (detectionId, newStatus) => {
+    setAlertStatuses((prev) => {
+      const next = { ...prev, [detectionId]: newStatus }
+      localStorage.setItem('alert_statuses', JSON.stringify(next))
+      return next
+    })
+    setSelected(null)
+  }
+
+  const alerts = useMemo(() => {
+    return allDetections
+      .filter((d) => d.level !== 'normal')
+      .map((det) => ({
+        id: `alert-${det.id}`,
+        detectionId: det.id,
+        plate: det.plate,
+        level: det.level,
+        reason: det.reason,
+        camera: det.camera,
+        cameraLocation: det.cameraLocation,
+        timestamp: det.timestamp,
+        confidence: det.confidence,
+        imageUrl: det.imageUrl,
+        status: alertStatuses[det.id] || 'new',
+      }))
+  }, [allDetections, alertStatuses])
 
   const filtered = useMemo(() => {
-    return mockAlerts.filter((a) => {
+    return alerts.filter((a) => {
       if (level !== 'all' && a.level !== level) return false
       if (camera !== 'all' && a.camera !== camera) return false
       if (status !== 'all' && a.status !== status) return false
       return true
     })
-  }, [level, camera, status])
+  }, [alerts, level, camera, status])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -39,7 +73,6 @@ export function AlertsPage() {
       <div className="flex flex-wrap gap-3">
         <select value={level} onChange={(e) => { setLevel(e.target.value); setPage(1) }} className={selectClass}>
           <option value="all">Tous les niveaux</option>
-          <option value="normal">Normal</option>
           <option value="orange">Orange</option>
           <option value="red">Rouge</option>
         </select>
@@ -49,7 +82,6 @@ export function AlertsPage() {
           <option value="B">Caméra B</option>
           <option value="C">Caméra C</option>
         </select>
-        <input type="date" className={selectClass} defaultValue="2026-05-16" />
         <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} className={selectClass}>
           <option value="all">Tous les statuts</option>
           <option value="new">Nouvelles</option>
@@ -93,6 +125,13 @@ export function AlertsPage() {
                 </td>
               </tr>
             ))}
+            {pageItems.length === 0 && (
+              <tr>
+                <td colSpan="7" className="px-4 py-8 text-center text-sm text-[var(--color-muted)]">
+                  Aucune alerte trouvée
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -148,12 +187,14 @@ export function AlertsPage() {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
+                onClick={() => updateAlertStatus(selected.detectionId, 'validated')}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
               >
                 Valider l'alerte
               </button>
               <button
                 type="button"
+                onClick={() => updateAlertStatus(selected.detectionId, 'false_positive')}
                 className="rounded-lg border border-orange-500/40 px-4 py-2 text-sm text-orange-400 hover:bg-orange-500/10"
               >
                 Marquer comme faux positif

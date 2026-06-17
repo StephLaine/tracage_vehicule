@@ -1,66 +1,65 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { mockDetections } from '@/data/mockDetections'
-import { randomPlate } from '@/lib/utils'
-
-const reasons = {
-  normal: ['Passage enregistré', 'Circulation normale'],
-  orange: ['Plaque signalée — suspecte', 'Véhicule recherché'],
-  red: ['Vol signalé', 'Plaque frauduleuse'],
-}
-
-const locations = { A: 'Delmas 32', B: 'Pétion-Ville', C: 'Tabarre' }
-
-function pickLevel() {
-  const r = Math.random()
-  if (r < 0.8) return 'normal'
-  if (r < 0.95) return 'orange'
-  return 'red'
-}
-
-function createDetection() {
-  const level = pickLevel()
-  const camera = ['A', 'B', 'C'][Math.floor(Math.random() * 3)]
-  const plate = randomPlate()
-  return {
-    id: `live-${Date.now()}`,
-    plate,
-    camera,
-    cameraLocation: locations[camera],
-    timestamp: new Date(),
-    level,
-    reason: reasons[level][Math.floor(Math.random() * reasons[level].length)],
-    confidence: 0.85 + Math.random() * 0.14,
-    imageUrl: `https://picsum.photos/seed/${plate}/400/220`,
-  }
-}
+import { fetchDetections } from '@/lib/api'
 
 export function useLiveFeed(onRedAlert) {
-  const [detections, setDetections] = useState(() => mockDetections.slice(0, 10))
+  const [detections, setDetections] = useState([])
+  const [allDetections, setAllDetections] = useState([])
   const [newIds, setNewIds] = useState(new Set())
-  const counter = useRef(10)
+  const lastChecked = useRef(null)
+  const knownIds = useRef(new Set())
 
-  const addDetection = useCallback(() => {
-    const det = createDetection()
-    counter.current += 1
-    det.id = `det-live-${counter.current}`
+  const loadDetections = useCallback(async () => {
+    const realDets = await fetchDetections()
+    setAllDetections(realDets)
+    
+    // Live feed table shows the 10 most recent detections
+    const sliced = realDets.slice(0, 10)
+    setDetections(sliced)
 
-    setDetections((prev) => [det, ...prev.slice(0, 9)])
-    setNewIds((prev) => new Set(prev).add(det.id))
-    setTimeout(() => {
-      setNewIds((prev) => {
-        const next = new Set(prev)
-        next.delete(det.id)
-        return next
+    // Check for newly added items to trigger animations and alerts
+    if (lastChecked.current !== null) {
+      const newlyAdded = []
+      realDets.forEach((det) => {
+        if (!knownIds.current.has(det.id)) {
+          knownIds.current.add(det.id)
+          newlyAdded.push(det)
+        }
       })
-    }, 2000)
 
-    if (det.level === 'red') onRedAlert?.(det)
+      if (newlyAdded.length > 0) {
+        const addedIds = newlyAdded.map((d) => d.id)
+        setNewIds((prev) => {
+          const next = new Set(prev)
+          addedIds.forEach((id) => next.add(id))
+          return next
+        })
+
+        setTimeout(() => {
+          setNewIds((prev) => {
+            const next = new Set(prev)
+            addedIds.forEach((id) => next.delete(id))
+            return next
+          })
+        }, 3000)
+
+        // Check for any red alerts in the newly received detections
+        const redAlerts = newlyAdded.filter((d) => d.level === 'red')
+        if (redAlerts.length > 0 && onRedAlert) {
+          onRedAlert(redAlerts[0])
+        }
+      }
+    } else {
+      // First load: initialize known IDs
+      realDets.forEach((det) => knownIds.current.add(det.id))
+      lastChecked.current = Date.now()
+    }
   }, [onRedAlert])
 
   useEffect(() => {
-    const id = setInterval(addDetection, 8000)
+    loadDetections()
+    const id = setInterval(loadDetections, 3000)
     return () => clearInterval(id)
-  }, [addDetection])
+  }, [loadDetections])
 
-  return { detections, newIds }
+  return { detections, allDetections, newIds, refresh: loadDetections }
 }

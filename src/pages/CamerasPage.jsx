@@ -1,23 +1,77 @@
+import { useEffect, useState } from 'react'
 import { mockCameras } from '@/data/mockCameras'
 import { formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { MapPin } from 'lucide-react'
+import { useLiveFeed } from '@/hooks/useLiveFeed'
+import { fetchCameras, normalizeCameraCode } from '@/lib/api'
 
 export function CamerasPage() {
+  const [activeCameraCodes, setActiveCameraCodes] = useState([])
+  const [streamErrors, setStreamErrors] = useState({})
+  const { allDetections } = useLiveFeed()
+
+  useEffect(() => {
+    const loadActive = async () => {
+      const active = await fetchCameras()
+      setActiveCameraCodes(active)
+    }
+    loadActive()
+    const interval = setInterval(loadActive, 5000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const cameras = mockCameras.map((cam) => {
+    const camDets = allDetections.filter((d) => d.camera === cam.code)
+    const lastDet = camDets[0]
+    const todayCamDets = camDets.filter(
+      (d) => d.timestamp.toDateString() === new Date().toDateString()
+    )
+
+    const rawActiveId = activeCameraCodes.find(
+      (id) => normalizeCameraCode(id) === cam.code
+    )
+    const online = !!rawActiveId
+
+    return {
+      ...cam,
+      status: online ? 'online' : 'offline',
+      activeId: rawActiveId || cam.code,
+      lastDetection: lastDet ? { plate: lastDet.plate, at: lastDet.timestamp } : cam.lastDetection,
+      todayCount: todayCamDets.length,
+    }
+  })
+
   return (
     <div className="space-y-8">
       <div className="grid gap-6 lg:grid-cols-3">
-        {mockCameras.map((cam) => {
+        {cameras.map((cam) => {
           const online = cam.status === 'online'
+          const showLiveStream = online && !streamErrors[cam.code]
+
           return (
             <article
               key={cam.id}
               className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]"
             >
-              <div className="flex aspect-video items-center justify-center bg-black">
-                <p className="text-center text-sm text-[var(--color-muted)]">
-                  Flux {cam.name} — {online ? 'En ligne' : 'Hors ligne'}
-                </p>
+              <div className="flex aspect-video items-center justify-center bg-black overflow-hidden relative">
+                {showLiveStream ? (
+                  <img
+                    src={`/video_feed/${cam.activeId}`}
+                    alt={cam.name}
+                    className="h-full w-full object-cover"
+                    onError={() => setStreamErrors((prev) => ({ ...prev, [cam.code]: true }))}
+                  />
+                ) : (
+                  <div className="text-center text-sm text-[var(--color-muted)]">
+                    {online ? `Flux ${cam.name} — Erreur de connexion` : `Flux ${cam.name} — Hors ligne`}
+                  </div>
+                )}
+                {showLiveStream && (
+                  <div className="absolute top-3 right-3 rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white animate-pulse">
+                    Live
+                  </div>
+                )}
               </div>
               <div className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
@@ -49,9 +103,11 @@ export function CamerasPage() {
                 <div className="text-xs text-[var(--color-muted)]">
                   <p>
                     Dernière détection :{' '}
-                    <span className="font-mono text-white">{cam.lastDetection.plate}</span>
+                    <span className="font-mono text-white">{cam.lastDetection?.plate || 'Aucune'}</span>
                   </p>
-                  <p className="mt-1">{formatDateTime(cam.lastDetection.at)}</p>
+                  <p className="mt-1">
+                    {cam.lastDetection?.at ? formatDateTime(new Date(cam.lastDetection.at)) : ''}
+                  </p>
                 </div>
               </div>
             </article>
@@ -70,7 +126,7 @@ export function CamerasPage() {
               strokeWidth="1"
             />
           </svg>
-          {mockCameras.map((cam, i) => (
+          {cameras.map((cam, i) => (
             <div
               key={cam.id}
               className="absolute flex flex-col items-center"

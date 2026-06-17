@@ -1,40 +1,68 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { TrajectoryTimeline } from '@/components/TrajectoryTimeline'
 import { LevelBadge } from '@/components/LevelBadge'
-import {
-  demoPlates,
-  trajectoryByPlate,
-  mockDetections,
-} from '@/data/mockDetections'
 import { formatDateTime } from '@/lib/utils'
+import { useLiveFeed } from '@/hooks/useLiveFeed'
 
 export function SearchPage() {
   const [query, setQuery] = useState('')
   const [result, setResult] = useState(null)
+  
+  const { allDetections } = useLiveFeed()
+
+  const recentPlates = useMemo(() => {
+    const seen = new Set()
+    const list = []
+    allDetections.forEach((d) => {
+      if (!seen.has(d.plate)) {
+        seen.add(d.plate)
+        const count = allDetections.filter((x) => x.plate === d.plate).length
+        const statusMap = {
+          red: 'Volée',
+          orange: 'Suspecte',
+          normal: 'Normale',
+        }
+        list.push({
+          plate: d.plate,
+          status: statusMap[d.level] || 'Normale',
+          passages: count,
+        })
+      }
+    })
+    return list.slice(0, 5)
+  }, [allDetections])
 
   const search = (plate) => {
     const normalized = plate.trim().toUpperCase()
-    const demo = demoPlates.find((p) => p.plate === normalized)
-    const passages = mockDetections.filter((d) => d.plate === normalized)
-    const trajectory = trajectoryByPlate[normalized]
+    const passages = allDetections.filter((d) => d.plate.toUpperCase() === normalized)
 
-    if (!demo && !passages.length) {
+    if (!passages.length) {
       setResult({ found: false, plate: normalized })
       return
+    }
+
+    const chronological = [...passages].sort((a, b) => a.timestamp - b.timestamp)
+    const latestFirst = [...passages].sort((a, b) => b.timestamp - a.timestamp)
+    const latestDet = latestFirst[0]
+
+    const statusMap = {
+      red: 'Signalée — Rouge',
+      orange: 'Signalée — Orange',
+      normal: 'Normale',
     }
 
     setResult({
       found: true,
       plate: normalized,
-      status: demo?.status ?? 'Normale',
-      passages: demo?.passages ?? passages.length,
-      trajectory: trajectory ?? passages.slice(0, 3).map((p) => ({
+      status: statusMap[latestDet.level] || 'Normale',
+      passages: passages.length,
+      trajectory: chronological.map((p) => ({
         camera: p.camera,
         location: p.cameraLocation,
         timestamp: p.timestamp,
       })),
-      details: passages.length ? passages : mockDetections.slice(0, 3),
+      details: latestFirst,
     })
   }
 
@@ -69,22 +97,30 @@ export function SearchPage() {
           <p className="mt-2 text-[var(--color-muted)]">
             Entrez une plaque pour visualiser son parcours entre les caméras.
           </p>
-          <p className="mt-6 text-sm text-[var(--color-muted)]">Plaques de démo :</p>
-          <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {demoPlates.map((p) => (
-              <button
-                key={p.plate}
-                type="button"
-                onClick={() => {
-                  setQuery(p.plate)
-                  search(p.plate)
-                }}
-                className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2 font-mono text-sm text-white hover:border-emerald-500/40"
-              >
-                {p.plate}
-              </button>
-            ))}
-          </div>
+          {recentPlates.length > 0 ? (
+            <>
+              <p className="mt-6 text-sm text-[var(--color-muted)]">Plaques récentes détectées :</p>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                {recentPlates.map((p) => (
+                  <button
+                    key={p.plate}
+                    type="button"
+                    onClick={() => {
+                      setQuery(p.plate)
+                      search(p.plate)
+                    }}
+                    className="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-2 font-mono text-sm text-white hover:border-emerald-500/40"
+                  >
+                    {p.plate} ({p.passages} passages)
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="mt-6 text-sm text-[var(--color-muted)]">
+              Aucun véhicule détecté pour le moment. Injectez des simulations ou connectez des caméras.
+            </p>
+          )}
         </div>
       )}
 
@@ -103,7 +139,7 @@ export function SearchPage() {
             <div className="mt-4 flex flex-wrap gap-6">
               <div>
                 <p className="text-lg font-semibold text-white">{result.status}</p>
-                <p className="text-sm text-[var(--color-muted)]">Statut</p>
+                <p className="text-sm text-[var(--color-muted)]">Statut de la dernière alerte</p>
               </div>
               <div>
                 <p className="text-lg font-semibold text-white">{result.passages}</p>
