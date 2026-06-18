@@ -66,7 +66,7 @@ export function CamerasPage() {
               <div className="flex aspect-video items-center justify-center bg-black overflow-hidden relative">
                 {showLiveStream ? (
                   <img
-                    src={`/video_feed/${cam.activeId}`}
+                    src={`https://tracage-vehicule.onrender.com/video_feed/${cam.activeId}`}
                     alt={cam.name}
                     className="h-full w-full object-cover"
                     onError={() => setStreamErrors((prev) => ({ ...prev, [cam.code]: true }))}

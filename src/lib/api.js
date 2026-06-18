@@ -1,3 +1,5 @@
+const API_BASE_URL = 'https://tracage-vehicule.onrender.com'
+
 const cameraLocations = {
   A: 'Delmas 32 — Avenue Christophe',
   B: 'Pétion-Ville — Rue Panaméricaine',
@@ -39,7 +41,7 @@ export function normalizeDetection(det, index) {
 
 export async function fetchDetections() {
   try {
-    const res = await fetch('/api/detections')
+    const res = await fetch(`${API_BASE_URL}/api/detections`)
     if (!res.ok) {
       throw new Error(`Erreur API: ${res.status}`)
     }
@@ -68,7 +70,7 @@ export async function seedDetections(detections) {
       })),
     }
 
-    const res = await fetch('/api/detections/batch/', {
+    const res = await fetch(`${API_BASE_URL}/api/detections/batch/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -88,7 +90,7 @@ export async function seedDetections(detections) {
 
 export async function fetchCameras() {
   try {
-    const res = await fetch('/api/cameras')
+    const res = await fetch(`${API_BASE_URL}/api/cameras`)
     if (!res.ok) {
       throw new Error(`Erreur API: ${res.status}`)
     }
