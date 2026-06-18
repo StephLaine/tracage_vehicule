@@ -43,10 +43,17 @@ def generate_frames(camera_id):
 
 @app.route('/video_feed/<camera_id>')
 def video_feed(camera_id):
-    return Response(
+    response = Response(
         generate_frames(camera_id),
         mimetype='multipart/x-mixed-replace; boundary=frame'
     )
+    # Disable proxy buffering (e.g. Nginx on Render) so frames are sent immediately
+    response.headers['X-Accel-Buffering'] = 'no'
+    # Prevent caching
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/view/<camera_id>')
