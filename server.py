@@ -1,5 +1,6 @@
 from flask import Flask, Response, render_template_string, request, jsonify
 from datetime import datetime
+import time
 
 app = Flask(__name__)
 
@@ -34,6 +35,7 @@ def generate_frames(camera_id):
                     b'--frame\r\n'
                     b'Content-Type: image/jpeg\r\n\r\n' + cameras[camera_id] + b'\r\n'
             )
+        time.sleep(0.05)  # Limit stream to ~20 FPS and prevent CPU-bound infinite loop
 
 
 @app.route('/video_feed/<camera_id>')

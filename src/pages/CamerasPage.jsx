@@ -15,6 +15,15 @@ export function CamerasPage() {
     const loadActive = async () => {
       const active = await fetchCameras()
       setActiveCameraCodes(active)
+      // Automatically clear stream errors for cameras that are now online
+      setStreamErrors((prev) => {
+        const next = { ...prev }
+        active.forEach((id) => {
+          const code = normalizeCameraCode(id)
+          next[code] = false
+        })
+        return next
+      })
     }
     loadActive()
     const interval = setInterval(loadActive, 5000)
@@ -63,10 +72,24 @@ export function CamerasPage() {
                     onError={() => setStreamErrors((prev) => ({ ...prev, [cam.code]: true }))}
                   />
                 ) : (
-                  <div className="text-center text-sm text-[var(--color-muted)]">
-                    {online ? `Flux ${cam.name} — Erreur de connexion` : `Flux ${cam.name} — Hors ligne`}
+                  <div className="text-center text-sm text-[var(--color-muted)] p-4">
+                    {online ? (
+                      <div className="space-y-3">
+                        <p>Flux {cam.name} — Erreur de connexion</p>
+                        <button
+                          type="button"
+                          onClick={() => setStreamErrors((prev) => ({ ...prev, [cam.code]: false }))}
+                          className="rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 transition-all cursor-pointer"
+                        >
+                          Réessayer
+                        </button>
+                      </div>
+                    ) : (
+                      `Flux ${cam.name} — Hors ligne`
+                    )}
                   </div>
-                )}
+                )
+              }
                 {showLiveStream && (
                   <div className="absolute top-3 right-3 rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white animate-pulse">
                     Live

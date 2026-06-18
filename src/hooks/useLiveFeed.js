@@ -7,6 +7,12 @@ export function useLiveFeed(onRedAlert) {
   const [newIds, setNewIds] = useState(new Set())
   const lastChecked = useRef(null)
   const knownIds = useRef(new Set())
+  const onRedAlertRef = useRef(onRedAlert)
+
+  // Keep callback reference updated without triggering re-creation of loadDetections
+  useEffect(() => {
+    onRedAlertRef.current = onRedAlert
+  }, [onRedAlert])
 
   const loadDetections = useCallback(async () => {
     const realDets = await fetchDetections()
@@ -44,8 +50,8 @@ export function useLiveFeed(onRedAlert) {
 
         // Check for any red alerts in the newly received detections
         const redAlerts = newlyAdded.filter((d) => d.level === 'red')
-        if (redAlerts.length > 0 && onRedAlert) {
-          onRedAlert(redAlerts[0])
+        if (redAlerts.length > 0 && onRedAlertRef.current) {
+          onRedAlertRef.current(redAlerts[0])
         }
       }
     } else {
@@ -53,9 +59,10 @@ export function useLiveFeed(onRedAlert) {
       realDets.forEach((det) => knownIds.current.add(det.id))
       lastChecked.current = Date.now()
     }
-  }, [onRedAlert])
+  }, []) // Empty dependencies array ensures function reference is stable
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDetections()
     const id = setInterval(loadDetections, 3000)
     return () => clearInterval(id)
