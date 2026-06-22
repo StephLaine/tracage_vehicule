@@ -1,11 +1,13 @@
 from flask import Flask, Response, render_template_string, request, jsonify
 from flask_cors import CORS
+from flask_sock import Sock
 from datetime import datetime
 import time
 import os
 
 app = Flask(__name__)
 CORS(app)
+sock = Sock(app)
 
 # Dictionary to hold the latest frame bytes for each camera
 # Example: {"CAM_01": b'...'}
@@ -13,6 +15,23 @@ cameras = {}
 
 # List to store received AI detection events
 detections = []
+
+
+@sock.route('/ws/upload/<camera_id>')
+def ws_upload(ws, camera_id):
+    """
+    Accepts a persistent WebSocket connection from the Jetson Nano.
+    Continuously updates the global cameras dictionary with binary frame data.
+    """
+    global cameras
+    print(f"Camera {camera_id} connected via WebSocket.")
+    try:
+        while True:
+            frame_bytes = ws.receive()
+            if frame_bytes:
+                cameras[camera_id] = frame_bytes
+    except Exception as e:
+        print(f"Camera {camera_id} disconnected from WebSocket: {e}")
 
 
 @app.route('/upload/<camera_id>', methods=['POST'])
