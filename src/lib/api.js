@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://tracage-vehicule.onrender.com'
+export const API_BASE_URL = 'https://tracage-vehicule.onrender.com'
 
 const cameraLocations = {
   A: 'Delmas 32 — Avenue Christophe',

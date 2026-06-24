@@ -4,7 +4,7 @@ import { formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { MapPin } from 'lucide-react'
 import { useLiveFeed } from '@/hooks/useLiveFeed'
-import { fetchCameras, normalizeCameraCode } from '@/lib/api'
+import { fetchCameras, normalizeCameraCode, API_BASE_URL } from '@/lib/api'
 
 export function CamerasPage() {
   const [activeCameraCodes, setActiveCameraCodes] = useState([])
@@ -56,7 +56,7 @@ export function CamerasPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {cameras.map((cam) => {
           const online = cam.status === 'online'
-          const showLiveStream = online && !streamErrors[cam.code]
+          const showLiveStream = !streamErrors[cam.code]
 
           return (
             <article
@@ -66,7 +66,7 @@ export function CamerasPage() {
               <div className="flex aspect-video items-center justify-center bg-black overflow-hidden relative">
                 {showLiveStream ? (
                   <img
-                    src={`https://tracage-vehicule.onrender.com/video_feed/${cam.activeId}`}
+                    src={`${API_BASE_URL}/video_feed/${cam.activeId}`}
                     alt={cam.name}
                     className="h-full w-full object-cover"
                     onError={() => setStreamErrors((prev) => ({ ...prev, [cam.code]: true }))}
