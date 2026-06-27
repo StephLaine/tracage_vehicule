@@ -131,11 +131,28 @@ export function DashboardPage() {
       >
         {detail && (
           <div>
-            <img
-              src={detail.imageUrl}
-              alt={`Plaque ${detail.plate}`}
-              className="mb-6 w-full rounded-xl object-cover"
-            />
+            <div className="mb-6 flex items-center justify-center rounded-xl bg-[#0d1117] py-8">
+              <svg
+                viewBox="0 0 340 120"
+                width="340"
+                height="120"
+                xmlns="http://www.w3.org/2000/svg"
+                className="drop-shadow-xl"
+              >
+                {/* Plate body */}
+                <rect x="4" y="4" width="332" height="112" rx="10" ry="10" fill="#f5f0dc" stroke="#1a3a8f" strokeWidth="6" />
+                {/* Inner border */}
+                <rect x="12" y="12" width="316" height="96" rx="6" ry="6" fill="none" stroke="#1a3a8f" strokeWidth="2" />
+                {/* Country label */}
+                <text x="170" y="36" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="bold" fontSize="13" fill="#1a3a8f" letterSpacing="4">
+                  HAITI
+                </text>
+                {/* Plate number */}
+                <text x="170" y="85" textAnchor="middle" fontFamily="'Courier New', monospace" fontWeight="bold" fontSize="38" fill="#111" letterSpacing="3">
+                  {detail.plate}
+                </text>
+              </svg>
+            </div>
             <LevelBadge level={detail.level} className="mb-4" />
             <CopyableRow value={detail.plate} label="Plaque d'immatriculation" />
             <CopyableRow
