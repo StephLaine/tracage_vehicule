@@ -1,34 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { mockCameras } from '@/data/mockCameras'
 import { formatDateTime } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { MapPin } from 'lucide-react'
 import { useLiveFeed } from '@/hooks/useLiveFeed'
-import { fetchCameras, normalizeCameraCode, API_BASE_URL } from '@/lib/api'
+
+const VIDEO_URLS = {
+  A: 'https://videos.pexels.com/video-files/2103099/2103099-hd_1920_1080_30fps.mp4',
+  B: 'https://videos.pexels.com/video-files/8321860/8321860-hd_1920_1080_30fps.mp4',
+  C: 'https://videos.pexels.com/video-files/12781265/12781265-sd_640_360_25fps.mp4',
+}
 
 export function CamerasPage() {
-  const [activeCameraCodes, setActiveCameraCodes] = useState([])
   const [streamErrors, setStreamErrors] = useState({})
   const { allDetections } = useLiveFeed()
-
-  useEffect(() => {
-    const loadActive = async () => {
-      const active = await fetchCameras()
-      setActiveCameraCodes(active)
-      // Automatically clear stream errors for cameras that are now online
-      setStreamErrors((prev) => {
-        const next = { ...prev }
-        active.forEach((id) => {
-          const code = normalizeCameraCode(id)
-          next[code] = false
-        })
-        return next
-      })
-    }
-    loadActive()
-    const interval = setInterval(loadActive, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
   const cameras = mockCameras.map((cam) => {
     const camDets = allDetections.filter((d) => d.camera === cam.code)
@@ -37,15 +22,8 @@ export function CamerasPage() {
       (d) => d.timestamp.toDateString() === new Date().toDateString()
     )
 
-    const rawActiveId = activeCameraCodes.find(
-      (id) => normalizeCameraCode(id) === cam.code
-    )
-    const online = !!rawActiveId
-
     return {
       ...cam,
-      status: online ? 'online' : 'offline',
-      activeId: rawActiveId || cam.code,
       lastDetection: lastDet ? { plate: lastDet.plate, at: lastDet.timestamp } : cam.lastDetection,
       todayCount: todayCamDets.length,
     }
@@ -64,16 +42,19 @@ export function CamerasPage() {
               className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]"
             >
               <div className="flex aspect-video items-center justify-center bg-black overflow-hidden relative">
-                {showLiveStream ? (
-                  <img
-                    src={`${API_BASE_URL}/video_feed/${cam.activeId}`}
-                    alt={cam.name}
+                {online && showLiveStream ? (
+                  <video
+                    src={VIDEO_URLS[cam.code]}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="h-full w-full object-cover"
                     onError={() => setStreamErrors((prev) => ({ ...prev, [cam.code]: true }))}
                   />
                 ) : (
                   <div className="text-center text-sm text-[var(--color-muted)] p-4">
-                    {online ? (
+                    {online && streamErrors[cam.code] ? (
                       <div className="space-y-3">
                         <p>Flux {cam.name} — Erreur de connexion</p>
                         <button
@@ -88,9 +69,8 @@ export function CamerasPage() {
                       `Flux ${cam.name} — Hors ligne`
                     )}
                   </div>
-                )
-              }
-                {showLiveStream && (
+                )}
+                {online && showLiveStream && (
                   <div className="absolute top-3 right-3 rounded bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white animate-pulse">
                     Live
                   </div>
