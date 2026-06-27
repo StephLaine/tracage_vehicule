@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { MetricCard } from '@/components/MetricCard'
 import { CameraStatusCard } from '@/components/CameraStatusCard'
 import { DetectionRow } from '@/components/DetectionRow'
@@ -10,28 +10,17 @@ import { mockCameras } from '@/data/mockCameras'
 import { mockDetections } from '@/data/mockDetections'
 import { useLiveFeed } from '@/hooks/useLiveFeed'
 import { formatDateTime } from '@/lib/utils'
-import { seedDetections, fetchCameras, normalizeCameraCode } from '@/lib/api'
+import { seedDetections } from '@/lib/api'
 
 export function DashboardPage() {
   const [toast, setToast] = useState(null)
   const [detail, setDetail] = useState(null)
-  const [activeCameraCodes, setActiveCameraCodes] = useState([])
   const [seeding, setSeeding] = useState(false)
 
   const { detections, allDetections, newIds, refresh } = useLiveFeed((det) => {
     setToast({ message: 'Alerte Rouge détectée', plate: det.plate })
     setTimeout(() => setToast(null), 5000)
   })
-
-  useEffect(() => {
-    const loadActive = async () => {
-      const active = await fetchCameras()
-      setActiveCameraCodes(active)
-    }
-    loadActive()
-    const interval = setInterval(loadActive, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
   const handleSeed = async () => {
     try {
@@ -63,13 +52,8 @@ export function DashboardPage() {
       (d) => d.timestamp.toDateString() === new Date().toDateString()
     )
 
-    const isOnline = activeCameraCodes.some(
-      (id) => normalizeCameraCode(id) === cam.code
-    )
-
     return {
       ...cam,
-      status: isOnline ? 'online' : 'offline',
       lastDetection: lastDet ? { plate: lastDet.plate, at: lastDet.timestamp } : cam.lastDetection,
       todayCount: todayCamDets.length,
     }
