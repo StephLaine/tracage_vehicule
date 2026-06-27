@@ -27,7 +27,7 @@ export const mockCameras = [
     code: 'C',
     location: 'Tabarre — Route de l\'Aéroport',
     coords: [18.5798, -72.2641],
-    status: 'offline',
+    status: 'online',
     lastDetection: { plate: 'HT-1190-RX', at: new Date(Date.now() - 45 * 60 * 1000) },
     todayCount: 64,
     readabilityRate: 87,
