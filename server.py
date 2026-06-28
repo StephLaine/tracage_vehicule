@@ -202,6 +202,13 @@ def receive_detection_batch():
         "received_count": len(valid_detections),
         "total_detections": len(detections)
     }), 201
+@app.route('/api/detections/reset', methods=['POST'])
+def reset_detections():
+    global detections
+    detections = []
+    return jsonify({"status": "success", "message": "Detections cleared"}), 200
+
+
 @app.route('/api/detections', methods=['GET'])
 def list_detections():
     """
